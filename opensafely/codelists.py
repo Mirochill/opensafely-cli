@@ -352,7 +352,8 @@ def parse_codelist_file_line(line):
     if not line or line.startswith("#"):
         return
     tokens = line.split("/")
-    if len(tokens) not in [3, 4]:
+    expected_tokens = 4 if tokens[0] == "user" else 3
+    if len(tokens) != expected_tokens or not all(tokens):
         exit_with_error(
             f"{line} does not match [project]/[codelist]/[version] "
             "or user/[username]/[codelist]/[version]"

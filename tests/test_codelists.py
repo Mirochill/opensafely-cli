@@ -173,9 +173,40 @@ def test_codelists_parse_fail_if_codelist_file_does_not_exist(codelists_path):
 def test_codelists_parse_pass_if_different_lists_have_same_version(codelists_path):
     with open(codelists_path / "codelists/codelists.txt", "a") as f:
         f.write("\nsomeproject/somelist/someversion")
-        f.write("\nsomeuser/anotherproject/somelist/someversion")
+        f.write("\nuser/someuser/somelist/someversion")
     os.chdir(codelists_path)
     assert codelists.parse_codelist_file(codelists_path / "codelists")
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "user/rebkwok/my-codelist",
+        "project/owner/codelist/version",
+        "/codelist/version",
+        "project//version",
+        "user//codelist/version",
+        "user/owner//version",
+    ],
+)
+def test_codelists_parse_rejects_invalid_namespaces(line, capsys):
+    with pytest.raises(SystemExit, match="1"):
+        codelists.parse_codelist_file_line(line)
+    assert "does not match" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize(
+    "line, filename",
+    [
+        ("project/codelist/version", "project-codelist.csv"),
+        ("user/owner/codelist/version", "user-owner-codelist.csv"),
+        ("  user/owner/codelist/version/  ", "user-owner-codelist.csv"),
+    ],
+)
+def test_codelists_parse_accepts_valid_namespaces(line, filename):
+    codelist = codelists.parse_codelist_file_line(line)
+    assert codelist.version == "version"
+    assert codelist.filename == Path(filename)
 
 
 def test_codelists_check_upstream_passes_if_no_codelists_dir(tmp_path):
